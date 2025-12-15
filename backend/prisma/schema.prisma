@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User Model
+model User {
+  id            String       @id @default(uuid())
+  email         String       @unique
+  password_hash String
+  role          UserRole     @default(STUDENT)
+  createdAt     DateTime     @default(now())
+  enrollments   Enrollment[]
+
+  @@map("users")
+}
+
+// Enum for User Roles
+enum UserRole {
+  STUDENT
+  ADMIN
+  INSTRUCTOR
+}
+
+// Course Model
+model Course {
+  id              Int      @id @default(autoincrement())
+  title           String
+  description     String?
+  price           Float
+  organization_id String?
+  createdAt       DateTime @default(now())
+  batches         Batch[]
+
+  @@map("courses")
+}
+
+// Batch Model
+model Batch {
+  id              Int          @id @default(autoincrement())
+  courseId        Int
+  startDate       DateTime
+  maxSeats        Int
+  currentEnrolled Int          @default(0)
+  createdAt       DateTime     @default(now())
+  course          Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrollments     Enrollment[]
+
+  @@map("batches")
+}
+
+// Enrollment Model
+model Enrollment {
+  id        String           @id @default(uuid())
+  userId    String
+  batchId   Int
+  status    EnrollmentStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batch     Batch            @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, batchId])
+  @@map("enrollments")
+}
+
+// Enum for Enrollment Status
+enum EnrollmentStatus {
+  PENDING
+  CONFIRMED
+}
+
