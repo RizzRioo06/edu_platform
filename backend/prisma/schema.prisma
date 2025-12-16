@@ -13,12 +13,24 @@ datasource db {
 model User {
   id            String       @id @default(uuid())
   email         String       @unique
-  password_hash String
+  password_hash String?
+  googleId      String?      @unique
+  provider      String?      @default("local")
   role          UserRole     @default(STUDENT)
   createdAt     DateTime     @default(now())
   enrollments   Enrollment[]
 
   @@map("users")
+}
+
+// Token Blacklist for Logout
+model TokenBlacklist {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("token_blacklist")
 }
 
 // Enum for User Roles

@@ -57,6 +57,11 @@ const login = async (email, password) => {
     throw new ApiError(401, 'Invalid email or password');
   }
 
+  // Check if user registered with Google
+  if (user.provider === 'google' && !user.password_hash) {
+    throw new ApiError(401, 'Please login with Google');
+  }
+
   // Verify password
   const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
@@ -82,12 +87,93 @@ const login = async (email, password) => {
       id: user.id,
       email: user.email,
       role: user.role,
+      provider: user.provider,
     },
     token,
   };
 };
 
+/**
+ * Logout user by blacklisting the token
+ */
+const logout = async (token) => {
+  try {
+    // Decode token to get expiration
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const expiresAt = new Date(decoded.exp * 1000);
+
+    // Add token to blacklist
+    await prisma.tokenBlacklist.create({
+      data: {
+        token,
+        expiresAt,
+      },
+    });
+
+    return { message: 'Logged out successfully' };
+  } catch (error) {
+    throw new ApiError(400, 'Invalid token');
+  }
+};
+
+/**
+ * Check if token is blacklisted
+ */
+const isTokenBlacklisted = async (token) => {
+  const blacklistedToken = await prisma.tokenBlacklist.findUnique({
+    where: { token },
+  });
+
+  return !!blacklistedToken;
+};
+
+/**
+ * Delete user account
+ */
+const deleteAccount = async (userId, password = null) => {
+  // Get user
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  // If local user, verify password before deletion
+  if (user.provider === 'local' && password) {
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    if (!isPasswordValid) {
+      throw new ApiError(401, 'Invalid password');
+    }
+  }
+
+  // Delete user (cascades to enrollments due to Prisma schema)
+  await prisma.user.delete({
+    where: { id: userId },
+  });
+
+  return { message: 'Account deleted successfully' };
+};
+
+/**
+ * Clean up expired tokens from blacklist (maintenance function)
+ */
+const cleanExpiredTokens = async () => {
+  await prisma.tokenBlacklist.deleteMany({
+    where: {
+      expiresAt: {
+        lt: new Date(),
+      },
+    },
+  });
+};
+
 module.exports = {
   register,
   login,
+  logout,
+  isTokenBlacklisted,
+  deleteAccount,
+  cleanExpiredTokens,
 };

@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
 const ApiError = require('../utils/ApiError');
+const authService = require('../services/authService');
 
 /**
  * Middleware to authenticate JWT token
  */
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   try {
     // Get token from Authorization header
     const authHeader = req.headers['authorization'];
@@ -12,6 +13,12 @@ const authenticateToken = (req, res, next) => {
 
     if (!token) {
       throw new ApiError(401, 'Access token is required');
+    }
+
+    // Check if token is blacklisted (logged out)
+    const isBlacklisted = await authService.isTokenBlacklisted(token);
+    if (isBlacklisted) {
+      throw new ApiError(401, 'Token has been revoked. Please login again.');
     }
 
     // Verify token
@@ -26,6 +33,9 @@ const authenticateToken = (req, res, next) => {
         email: decoded.email,
         role: decoded.role,
       };
+
+      // Attach token for logout
+      req.token = token;
 
       next();
     });

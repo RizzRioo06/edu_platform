@@ -1,6 +1,8 @@
 const express = require('express');
 const { body } = require('express-validator');
 const authController = require('../controllers/authController');
+const { authenticateToken } = require('../middlewares/auth');
+const passport = require('../config/passport');
 
 const router = express.Router();
 
@@ -36,6 +38,54 @@ router.post(
     body('password').notEmpty().withMessage('Password is required'),
   ],
   authController.login
+);
+
+/**
+ * @route   GET /auth/google
+ * @desc    Initiate Google OAuth
+ * @access  Public
+ */
+router.get(
+  '/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+/**
+ * @route   GET /auth/google/callback
+ * @desc    Google OAuth callback
+ * @access  Public
+ */
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { 
+    session: false,
+    failureRedirect: process.env.FRONTEND_URL || 'http://localhost:5173/login?error=auth_failed'
+  }),
+  authController.googleCallback
+);
+
+/**
+ * @route   POST /auth/logout
+ * @desc    Logout user (blacklist token)
+ * @access  Private
+ */
+router.post('/logout', authenticateToken, authController.logout);
+
+/**
+ * @route   DELETE /auth/account
+ * @desc    Delete user account
+ * @access  Private
+ */
+router.delete(
+  '/account',
+  authenticateToken,
+  [
+    body('password')
+      .optional()
+      .notEmpty()
+      .withMessage('Password is required for local accounts'),
+  ],
+  authController.deleteAccount
 );
 
 module.exports = router;

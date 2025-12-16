@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const passport = require('./config/passport');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -30,6 +31,9 @@ app.use(
 // Body parser middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // Logging middleware
 if (process.env.NODE_ENV === 'development') {
