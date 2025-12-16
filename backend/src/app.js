@@ -10,6 +10,7 @@ const authRoutes = require('./routes/authRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const batchRoutes = require('./routes/batchRoutes');
 const enrollmentRoutes = require('./routes/enrollmentRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 // Import middleware
 const errorHandler = require('./middlewares/errorHandler');
@@ -56,6 +57,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 404 handler
 app.use((req, res) => {

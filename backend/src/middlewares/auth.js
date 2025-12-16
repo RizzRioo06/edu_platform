@@ -65,7 +65,15 @@ const authorize = (...roles) => {
   };
 };
 
+/**
+ * Middleware to require specific role(s) - alias for authorize
+ */
+const requireRole = (roles) => {
+  return authorize(...roles);
+};
+
 module.exports = {
   authenticateToken,
   authorize,
+  requireRole,
 };
